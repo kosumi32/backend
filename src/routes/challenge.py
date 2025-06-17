@@ -32,14 +32,18 @@ class ChallengeRequest(BaseModel):
 
 # API endpoint
 @router.post("/generate-challenge")
-async def generate_challenge(request: ChallengeRequest, db: Session = Depends(get_db)):     # FastAPI expects a JSON body with the ChallengeRequest schema (Json body validator)
+async def generate_challenge(request: ChallengeRequest, request_obj: Request, db: Session = Depends(get_db)):     # FastAPI expects a JSON body with the ChallengeRequest schema (Json body validator)
+
+    # we have 2 seperate things
+    # 1. Details expecting from the user (ChallengeRequest)
+    # 2. reuest_obj: Actual reqquest including headers, cookies, etc. (Raw HTTP request)
     try:
-        user_details = await authenticate_and_get_user_details(request)
+        user_details = authenticate_and_get_user_details(request_obj)
         user_id= user_details.get("user_id")
 
         quota= get_challenge_quota(db, user_id)
         if not quota:
-            create_challenge_quota(db, user_id)  # create a new quota if it does not exist
+            quota= create_challenge_quota(db, user_id)  # create a new quota if it does not exist
 
         quota = reset_quota_if_needed(db, quota)  # reset quota if needed
 
@@ -47,16 +51,21 @@ async def generate_challenge(request: ChallengeRequest, db: Session = Depends(ge
             raise HTTPException(status_code=403, detail="Quota exceeded. Please try again later.")
         
         challenge_date= generate_challenge_with_ai(request.difficulty)
-
+        
         new_challenge= create_challenge(
             db=db,
             difficulty= request.difficulty,
             created_by=user_id,
-            **challenge_date  # Unpack the challenge_date dictionary, pass in all key-value pairs as arguments
+            title=challenge_date["title"],
+            options=json.dumps(challenge_date["options"]),  # Convert Python list to JSON string
+            correct_answer_id=challenge_date["correct_answer_id"],
+            explaination=challenge_date["explanation"],  # Fixed: parameter name should be 'explaination' to match db function
         )
 
+        # db.flush()  # Assigns new_challenge.id immediately        
         quota.quota -= 1  # Decrease the quota by 1
-        db.add(quota)  # Add the updated quota to the session
+        # db.add(quota)  # Add the updated quota to the session
+        db.commit()
 
         return {
             "id": new_challenge.id,
@@ -64,7 +73,7 @@ async def generate_challenge(request: ChallengeRequest, db: Session = Depends(ge
             "title": new_challenge.title,
             "options": json.loads(new_challenge.options),  # Convert JSON string to Python list
             "correct_answer_id": new_challenge.correct_answer_id,
-            "explanation": new_challenge.explanation,
+            "explanation": new_challenge.explaination,  # Fixed: accessing the correct field name from model
             "timestamp": new_challenge.date_created,
         }
 
@@ -74,9 +83,9 @@ async def generate_challenge(request: ChallengeRequest, db: Session = Depends(ge
 
 @router.get("/my-history")
 async def my_history(request: Request, db: Session = Depends(get_db)):      # auto get db session/ Raw HTTP request (X Json)
-    user_details = await authenticate_and_get_user_details(request)     # authenticate user and get details
-    if not user_details:
-        raise HTTPException(status_code=401, detail="Unauthorized User")
+    user_details = authenticate_and_get_user_details(request)     # authenticate user and get details
+    # if not user_details:
+    #     raise HTTPException(status_code=401, detail="Unauthorized User")
 
     user_id = user_details.get("user_id")
 
@@ -86,9 +95,9 @@ async def my_history(request: Request, db: Session = Depends(get_db)):      # au
 
 @router.get("/quota")
 async def get_quota(request: Request, db: Session = Depends(get_db)):
-    user_details = await authenticate_and_get_user_details(request)     # authenticate user and get details
-    if not user_details:
-        raise HTTPException(status_code=401, detail="Unauthorized User")
+    user_details = authenticate_and_get_user_details(request)     # authenticate user and get details
+    # if not user_details:
+    #     raise HTTPException(status_code=401, detail="Unauthorized User")
     
     user_id = user_details.get("user_id")
 

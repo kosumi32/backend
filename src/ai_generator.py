@@ -4,8 +4,17 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from typing import Dict, Any
 
-load_dotenv
+load_dotenv()  # Fixed: Added parentheses to actually call the function
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Debug: Print to check if API key is loaded
+if GOOGLE_API_KEY:
+    print(f"✅ Google API Key loaded successfully (length: {len(GOOGLE_API_KEY)})")
+else:
+    print("❌ Google API Key not found in environment variables")
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Environment variables containing 'GOOGLE': {[k for k in os.environ.keys() if 'GOOGLE' in k]}")
+
 genai.configure(api_key=GOOGLE_API_KEY)
 
 model= genai.GenerativeModel("gemini-2.0-flash-lite")
