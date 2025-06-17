@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from clerk_backend_api import Clerk
+from clerk_backend_api import Clerk, webhooks
 import os
 
 from .routes import challenge
@@ -17,3 +17,5 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
 
 
 app.include_router(challenge.router, prefix="/api")
+
+# app.include_router(webhooks.router, prefix="/webhooks")
