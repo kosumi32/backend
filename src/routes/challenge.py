@@ -59,10 +59,10 @@ async def generate_challenge(request: ChallengeRequest, request_obj: Request, db
             title=challenge_date["title"],
             options=json.dumps(challenge_date["options"]),  # Convert Python list to JSON string
             correct_answer_id=challenge_date["correct_answer_id"],
-            explaination=challenge_date["explanation"],  # Fixed: parameter name should be 'explaination' to match db function
+            explanation=challenge_date["explanation"],  # Now using correct spelling
         )
 
-        # db.flush()  # Assigns new_challenge.id immediately        
+        db.flush()  # Assigns new_challenge.id immediately        
         quota.quota -= 1  # Decrease the quota by 1
         # db.add(quota)  # Add the updated quota to the session
         db.commit()
@@ -73,7 +73,7 @@ async def generate_challenge(request: ChallengeRequest, request_obj: Request, db
             "title": new_challenge.title,
             "options": json.loads(new_challenge.options),  # Convert JSON string to Python list
             "correct_answer_id": new_challenge.correct_answer_id,
-            "explanation": new_challenge.explaination,  # Fixed: accessing the correct field name from model
+            "explanation": new_challenge.explanation,  # Now using correct spelling
             "timestamp": new_challenge.date_created,
         }
 

@@ -22,7 +22,7 @@ class Challenge(Base):
     title= Column(String, nullable=False)
     options= Column(String, nullable=False)  # JSON string of options
     correct_answer_id= Column(Integer, nullable=False)
-    explaination= Column(String, nullable=True) 
+    explanation= Column(String, nullable=True)  # Fixed spelling from explaination to explanation
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
